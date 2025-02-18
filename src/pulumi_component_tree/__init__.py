@@ -79,7 +79,8 @@ class ComponentTreeWrapper:
         Returns:
             Resource: The Pulumi resource created by the wrapped function
         """
-        return self._wrapper(self._parent.props, self._parent.opts)
+        opts = ResourceOptions.merge(self._parent.opts, ResourceOptions(parent=self._parent))
+        return self._wrapper(self._parent.props, opts)
 
 class ComponentTreeProps(TypedDict, total=False):
     """Base properties for all resources"""

@@ -1,8 +1,8 @@
 """Unit tests for pulumi_component_tree"""
 
 import pulumi
-from typing import TypedDict, Tuple, Union, List, Dict, Optional, Any, Callable
-from pulumi_component_tree import ComponentTree
+from typing import TypedDict, Tuple, List, Dict, Optional, Any
+from pulumi_component_tree import ComponentTree, ComponentTreeProps
 
 class MyMocks(pulumi.runtime.Mocks):
     def new_resource(self, args: pulumi.runtime.MockResourceArgs) -> Tuple[str, Dict[str, Any]]:
@@ -26,9 +26,11 @@ pulumi.runtime.set_mocks(MyMocks())
 class TestResource(pulumi.CustomResource):
     """A test resource with a mocked output value"""
     code: pulumi.Output[str]
+    parent: Optional[pulumi.Resource]
 
     def __init__(self, name: str, props: dict, opts: Optional[pulumi.ResourceOptions] = None):
         super().__init__("test:resource:TestResource", name, props, opts)
+        self.parent = opts.parent if opts is not None else None
         self.code = pulumi.Output.from_input(props["code"])
 
 class TestProps(TypedDict, total=False):
@@ -248,3 +250,48 @@ def test_multiple_extended_properties() -> pulumi.Output[None]:
         child2.resource.code,
         child3.resource.code
     ).apply(check_outputs)
+
+@pulumi.runtime.test
+def test_resource_wrapper() -> pulumi.Output[None]:
+    """Tests adding a resource via wrapper function passed to add()"""
+    parent = TestComponent("parent", {"code": "parent-code"})
+    child : Optional[TestResource] = None
+    
+    # Create wrapper function that follows ResourceWrapper type
+    def create_resource(props: ComponentTreeProps, opts: Optional[pulumi.ResourceOptions]) -> TestResource:
+        nonlocal child
+        child = TestResource("wrapped", dict(props), opts)
+        return child
+    
+    # Add the wrapper function directly to parent
+    parent.add(create_resource)
+    parent.construct()
+    
+    # Get the created resource from parent's children
+    assert child in parent.children, "Child should be in parent's children"
+
+    # Check the child's parentage
+    assert child.parent == parent, "Child should have parent as its parent"
+
+    def check_outputs(outputs: List[Any]) -> None:
+        (code,) = outputs
+        assert code == "parent-code", f"Resource code should be 'parent-code', got {code}"
+    
+    return pulumi.Output.all(child.code).apply(check_outputs)
+
+@pulumi.runtime.test
+def test_context_manager_construction() -> pulumi.Output[None]:
+    """Tests that resources are properly constructed when using the context manager syntax"""
+    with TestComponent("parent") as parent:
+        child = TestComponent("child", {"code": "via-context"})
+        parent << child
+    
+    def check_outputs(outputs: List[Any]) -> None:
+        (code,) = outputs
+        assert code == "via-context", f"Child code should be 'via-context', got {code}"
+        # Also verify the child was properly added to parent
+        assert child in parent.children, "Child should be in parent's children"
+        assert child.opts is not None, "Child opts should not be None"
+        assert child.opts.parent == parent, "Child should have parent as its parent"
+
+    return pulumi.Output.all(child.resource.code).apply(check_outputs)
