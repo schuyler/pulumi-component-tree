@@ -97,6 +97,18 @@ def test_default_output_before_construct() -> pulumi.Output[None]:
     return pulumi.Output.all(child.resource.code).apply(check_outputs)
 
 @pulumi.runtime.test
+def test_add_after_construct() -> None:
+    """Test that adding children after construction raises error"""
+    parent = TestComponent("parent")
+    parent.construct()
+    
+    try:
+        parent.add(TestComponent("child"))
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError as e:
+        assert str(e) == "Cannot add children after component has been constructed"
+
+@pulumi.runtime.test
 def test_child_output_after_parent_construct() -> pulumi.Output[None]:
     """Test that child component is constructed with provided value when parent constructs"""
     parent = TestComponent("parent")
