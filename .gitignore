@@ -19,7 +19,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Testing
 .pytest_cache/
+.coverage
+coverage.*
 
 # Mypy
 .mypy_cache/

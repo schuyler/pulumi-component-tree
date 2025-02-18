@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "pulumi-component-tree"
@@ -8,7 +8,7 @@ version = "0.1.0"
 authors = [
   { name = "Schuyler Erle" },
 ]
-description = "Tree-like structure for managing Pulumi ComponentResources and their dependencies"
+description = "A Python framework for building tree-structured Pulumi components that facilitate clear organization and dependency management of cloud infrastructure resources"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -32,25 +32,18 @@ dependencies = [
 "Homepage" = "https://github.com/schuyler/pulumi-component-tree"
 "Bug Tracker" = "https://github.com/schuyler/pulumi-component-tree/issues"
 
-[tool.black]
-line-length = 88
-target-version = ['py39']
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-
 [project.optional-dependencies]
 dev = [
     "mypy>=1.0.0",
     "pytest>=7.0.0",
+    "pytest-cov>=4.1.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["src"]
-addopts = "--verbose --disable-pytest-warnings"
+addopts = "--verbose --disable-pytest-warnings --cov=src/pulumi_component_tree --cov-report=xml --cov-report=term"
 filterwarnings = [
     "ignore::DeprecationWarning:google._upb._message",
     "ignore::pytest.PytestUnknownMarkWarning",
@@ -63,12 +56,9 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 
-[tool.hatch.build]
-include = [
-    "src/pulumi_component_tree/**/*.py",
-    "src/pulumi_component_tree/py.typed"
-]
-
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = ["pulumi_component_tree"]
+
+[tool.setuptools.package-data]
+pulumi_component_tree = ["py.typed"]
