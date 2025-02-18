@@ -11,17 +11,6 @@ def test_context_manager_construction():
     # Verify child code output
 ```
 
-## 2. Multiple Levels of Nesting Test
-Verifies that deeply nested components maintain proper dependency chains:
-```python
-@pulumi.runtime.test
-def test_nested_components():
-    grandparent = TestComponent("grandparent")
-    parent = TestComponent("parent", {"code": "parent-code"})
-    child = TestComponent("child", {"code": "child-code"})
-    # Verify both parent and child code outputs
-```
-
 ## 3. Multiple Extended Properties Test
 Tests that extend() works correctly with multiple property sets:
 ```python

@@ -161,6 +161,32 @@ def test_opts_merging() -> None:
     assert child.opts.parent == parent, "Child should have parent reference"
 
 @pulumi.runtime.test
+def test_nested_components() -> pulumi.Output[None]:
+    """Test that deeply nested components maintain proper dependency chains and property inheritance"""
+    grandparent = TestComponent("grandparent")
+    parent = TestComponent("parent", {"code": "parent-code"})
+    child = TestComponent("child", {"code": "child-code"})
+    
+    # Build component tree
+    grandparent.add(parent)
+    parent.add(child)
+    grandparent.construct()
+    
+    def check_outputs(outputs: List[Any]) -> None:
+        # Check parent and child codes
+        parent_code, child_code = outputs
+        assert parent_code == "parent-code", f"Parent code should be 'parent-code', got {parent_code}"
+        assert child_code == "child-code", f"Child code should be 'child-code', got {child_code}"
+        
+        # Verify dependency chain
+        assert child.opts is not None, "Child opts should not be None"
+        assert child.opts.parent == parent, "Child should have parent as its parent"
+        assert parent.opts is not None, "Parent opts should not be None"
+        assert parent.opts.parent == grandparent, "Parent should have grandparent as its parent"
+
+    return pulumi.Output.all(parent.resource.code, child.resource.code).apply(check_outputs)
+
+@pulumi.runtime.test
 def test_extend_child_props() -> pulumi.Output[None]:
     """Test that extend() properly sets default properties for child components"""
     parent = TestComponent("parent")
