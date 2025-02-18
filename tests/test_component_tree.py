@@ -105,6 +105,7 @@ def test_child_has_parent_in_opts() -> None:
     parent.construct()
     
     # After construction, verify that the child's resource has the correct parent
+    assert child.opts is not None, "Child opts should not be None after adding to parent"
     assert child.opts.parent == parent, "Child resource should have parent component as its parent"
 
 @pulumi.runtime.test
@@ -133,6 +134,31 @@ def test_add_after_construct() -> None:
         assert False, "Should have raised RuntimeError"
     except RuntimeError as e:
         assert str(e) == "Cannot add children after component has been constructed"
+
+@pulumi.runtime.test
+def test_opts_merging() -> None:
+    """Test that child's ResourceOptions are preserved when added to parent"""
+    parent = TestComponent(
+        "parent",
+        opts=pulumi.ResourceOptions(protect=True)
+    )
+    
+    child = TestComponent(
+        "child",
+        opts=pulumi.ResourceOptions(delete_before_replace=True)
+    )
+    
+    # Store original value to verify it's not lost
+    assert child.opts is not None, "Child opts should not be None"
+    original_delete_before_replace = child.opts.delete_before_replace
+    
+    parent.add(child)
+    parent.construct()
+    
+    # Verify child retains its options and gets parent reference
+    assert child.opts is not None, "Child opts should not be None after adding to parent"
+    assert child.opts.delete_before_replace == original_delete_before_replace, "Child should retain its original options"
+    assert child.opts.parent == parent, "Child should have parent reference"
 
 @pulumi.runtime.test
 def test_extend_child_props() -> pulumi.Output[None]:

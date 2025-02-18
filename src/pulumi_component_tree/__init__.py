@@ -268,7 +268,7 @@ class ComponentTree(ComponentResource, Generic[P]):
             self._children.append(child)
             
             # Set dependency on parent
-            child.opts = ResourceOptions(parent=self)
+            child.opts = ResourceOptions.merge(child.opts, ResourceOptions(parent=self))
             
             # Apply any configured defaults for this child type
             if type(child) in self._child_props:
