@@ -49,7 +49,8 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "--verbose"
+pythonpath = ["src"]
+addopts = "--verbose --disable-pytest-warnings"
 filterwarnings = [
     "ignore::DeprecationWarning:google._upb._message",
     "ignore::pytest.PytestUnknownMarkWarning",
