@@ -97,16 +97,15 @@ def test_default_output_before_construct() -> pulumi.Output[None]:
     return pulumi.Output.all(child.resource.code).apply(check_outputs)
 
 @pulumi.runtime.test
-def test_add_after_construct() -> None:
-    """Test that adding children after construction raises error"""
+def test_child_has_parent_in_opts() -> None:
+    """Test that child's ResourceOptions correctly sets parent when added to a parent component"""
     parent = TestComponent("parent")
+    child = TestComponent("child")
+    parent.add(child)
     parent.construct()
     
-    try:
-        parent.add(TestComponent("child"))
-        assert False, "Should have raised RuntimeError"
-    except RuntimeError as e:
-        assert str(e) == "Cannot add children after component has been constructed"
+    # After construction, verify that the child's resource has the correct parent
+    assert child.opts.parent == parent, "Child resource should have parent component as its parent"
 
 @pulumi.runtime.test
 def test_child_output_after_parent_construct() -> pulumi.Output[None]:
@@ -122,6 +121,18 @@ def test_child_output_after_parent_construct() -> pulumi.Output[None]:
         assert code == "child-code", f"Child code should be 'child-code', got {code}"
 
     return pulumi.Output.all(child.resource.code).apply(check_outputs)
+
+@pulumi.runtime.test
+def test_add_after_construct() -> None:
+    """Test that adding children after construction raises error"""
+    parent = TestComponent("parent")
+    parent.construct()
+    
+    try:
+        parent.add(TestComponent("child"))
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError as e:
+        assert str(e) == "Cannot add children after component has been constructed"
 
 @pulumi.runtime.test
 def test_extend_child_props() -> pulumi.Output[None]:
