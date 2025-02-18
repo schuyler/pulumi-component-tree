@@ -204,3 +204,47 @@ def test_extend_child_props() -> pulumi.Output[None]:
         assert actual_code == "from-parent-custom", f"Child code should be 'from-parent-custom', got {actual_code}"
 
     return pulumi.Output.all(child.resource.code).apply(check_outputs)
+
+@pulumi.runtime.test
+def test_multiple_extended_properties() -> pulumi.Output[None]:
+    """Test that extend() works correctly with multiple property sets"""
+    parent = TestComponent("parent")
+    # Set multiple default properties for AnotherTestComponent children
+    parent.extend(AnotherTestComponent, AnotherTestProps(
+        code="from-parent",
+        code_suffix="suffix1",
+        custom_value="value1"
+    ))
+
+    # Create children with different property overrides
+    child1 = AnotherTestComponent("child1")  # Uses all defaults
+    child2 = AnotherTestComponent("child2", {"code": "override-code"})  # Override code only
+    child3 = AnotherTestComponent("child3", {
+        "code_suffix": "custom-suffix",
+        "custom_value": "custom-value"
+    })  # Override suffix and custom value
+
+    parent.add(child1)
+    parent.add(child2)
+    parent.add(child3)
+    parent.construct()
+    
+    def check_outputs(outputs: List[Any]) -> None:
+        code1, code2, code3 = outputs
+        # Child1 should use all default values
+        assert code1 == "from-parent-suffix1", f"Child1 code should use default values, got {code1}"
+        # Child2 should use overridden code but default suffix
+        assert code2 == "override-code-suffix1", f"Child2 code should use overridden code, got {code2}"
+        # Child3 should use default code but overridden suffix
+        assert code3 == "from-parent-custom-suffix", f"Child3 code should use custom suffix, got {code3}"
+
+        # Verify custom_value property inheritance
+        assert child1.props.get("custom_value") == "value1", "Child1 should inherit custom_value"
+        assert child2.props.get("custom_value") == "value1", "Child2 should inherit custom_value"
+        assert child3.props.get("custom_value") == "custom-value", "Child3 should use overridden custom_value"
+
+    return pulumi.Output.all(
+        child1.resource.code,
+        child2.resource.code,
+        child3.resource.code
+    ).apply(check_outputs)
